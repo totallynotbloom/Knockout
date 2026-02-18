@@ -15,6 +15,9 @@ public class VictoryManager : MonoBehaviour
 	[Header("Camera Control")]
 	public CinemachineCamera virtualCamera; // Drag your Virtual Camera here
 
+	private Vector3 savedVelocity;
+	private Vector3 savedAngularVelocity;
+
 	void Awake() => Instance = this;
 
 	public void ShowVictoryMenu()
@@ -38,33 +41,31 @@ public class VictoryManager : MonoBehaviour
 
 	public void Continue()
 	{
+		// 1. Unfreeze the world first so logic can resume
 		Time.timeScale = 1f;
 		victoryUI.SetActive(false);
 
-		// 1. Reset Boss Stats
-		bossScript.currentHealth = bossScript.maxHealth;
-		bossScript.currentArmor = bossScript.maxArmor;
-		bossScript.isArmorBroken = false;
+		// 2. RESET THE BOSS STATE FIRST
+		// This stops old coroutines and sets isDead = false BEFORE we heal him
 		bossScript.ResetDeathState();
 
-		// 2. Snap Camera back to Boss
+		// 3. Snap Camera back to Boss
 		if (virtualCamera != null)
 		{
-			// Re-enabling the camera makes it track the 'Follow' target again
 			virtualCamera.enabled = true;
-
-			// This 'OnTargetObjectWarped' line prevents the camera from "sliding" 
-			// back slowly and instead snaps it instantly to the boss's current position.
 			virtualCamera.OnTargetObjectWarped(bossRb.transform, bossRb.transform.position - virtualCamera.transform.position);
 		}
 
-		// 3. Reset Pressure
+		// 4. Reset Pressure logic
 		PressureManager pm = Object.FindAnyObjectByType<PressureManager>();
 		if (pm != null) pm.ResetManager();
+
+		// 5. Tell the summoner to resume (if it was disabled)
+		if (summoner != null) summoner.enabled = true;
 	}
 
 
-public void EndScene()
+	public void EndScene()
 	{
 		Application.Quit();
 #if UNITY_EDITOR

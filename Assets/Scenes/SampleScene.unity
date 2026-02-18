@@ -748,8 +748,8 @@ MonoBehaviour:
   victoryUI: {fileID: 1232067355}
   bossScript: {fileID: 1126066387}
   bossRb: {fileID: 1126066381}
-  summoner: {fileID: 0}
-  virtualCamera: {fileID: 0}
+  summoner: {fileID: 489878195}
+  virtualCamera: {fileID: 1220191658}
 --- !u!1 &216704121
 GameObject:
   m_ObjectHideFlags: 0
@@ -2997,7 +2997,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c7fdd1da6809b294baed0c1144061fc2, type: 3}
+  m_Sprite: {fileID: 21300096, guid: 142ff8784e552734f9d6a895491d0ae8, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -3309,8 +3309,8 @@ MonoBehaviour:
     m_NumColorKeys: 3
     m_NumAlphaKeys: 2
   sliderFillImage: {fileID: 1009219298}
-  bossScript: {fileID: 0}
-  summoner: {fileID: 0}
+  bossScript: {fileID: 1126066387}
+  summoner: {fileID: 489878195}
   isGameOver: 0
 --- !u!1 &1050824592
 GameObject:
@@ -3850,9 +3850,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossHealth
   bossName: BIG BLUE
-  maxHealth: 100
-  currentHealth: 0
-  maxArmor: 50
+  maxHealth: 20
+  currentHealth: 10
+  maxArmor: 10
   currentArmor: 0
   isArmorBroken: 0
   armorRegenTime: 15
@@ -3863,7 +3863,7 @@ MonoBehaviour:
   healthNumbersText: {fileID: 1829539229}
   deathLaunchForce: 50
   isDead: 0
-  winUI: {fileID: 0}
+  winUI: {fileID: 1232067355}
   targetManager: {fileID: 0}
 --- !u!1 &1133633908
 GameObject:
@@ -5254,7 +5254,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 50e27722473803d4f820e06a38171cb6, type: 3}
+  m_Sprite: {fileID: 21300068, guid: 142ff8784e552734f9d6a895491d0ae8, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -7181,7 +7181,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e07e7a5f1feeda40adf6af65fede8a9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HitStopManager
-  baseDuration: 0.05
+  baseDuration: 0.08
   forceScaleFactor: 15000
   maxDuration: 0.4
 --- !u!4 &2093472904

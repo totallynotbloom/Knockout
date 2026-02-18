@@ -138,16 +138,17 @@ public class BossHealth : MonoBehaviour
 		if (isDead) return;
 		isDead = true;
 
-		// 2. Apply a massive "Finisher" force to launch him off-screen
+		// 1. (Optional) Still apply a little force so he reacts to the final hit
 		Rigidbody rb = GetComponent<Rigidbody>();
 		if (rb != null)
 		{
-			rb.linearVelocity = Vector3.zero; // Reset current speed
-			rb.AddForce(new Vector3(1, 1, 0) * deathLaunchForce, ForceMode.Impulse);
+			rb.AddForce(new Vector3(1, 1, 0) * 10f, ForceMode.Impulse);
 		}
 
-		// 3. Start checking if he is off-screen
-		StartCoroutine(CheckOffScreen());
+		// 2. Trigger the Victory Menu immediately
+		// The VictoryManager already has a 'DelayedWinSequence' coroutine 
+		// that waits 2 seconds before freezing, so this will look great!
+		VictoryManager.Instance.ShowVictoryMenu();
 	}
 	IEnumerator CheckOffScreen()
 	{
@@ -168,17 +169,22 @@ public class BossHealth : MonoBehaviour
 	{
 		isDead = false;
 
-		// Re-enable the collider so heroes can hit him again
+		// 1. Stop all active coroutines (like the old Armor Regen or OffScreen check)
+		StopAllCoroutines();
+		if (armorTimerText != null) armorTimerText.gameObject.SetActive(false);
+
+		// 2. Reset Health and Armor to full
+		currentHealth = maxHealth;
+		currentArmor = maxArmor;
+		isArmorBroken = false;
+
+		// 3. Re-enable the collider so heroes can hit him again
 		if (TryGetComponent<Collider>(out Collider col))
 		{
 			col.enabled = true;
 		}
 
-		// Reset physics so he doesn't keep drifting away
-		if (TryGetComponent<Rigidbody>(out Rigidbody rb))
-		{
-			rb.linearVelocity = Vector3.zero;
-			rb.angularVelocity = Vector3.zero;
-		}
+		// 5. Update the bars so they show full health immediately
+		UpdateUI();
 	}
 }
