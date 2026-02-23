@@ -157,13 +157,13 @@ MonoBehaviour:
   move1:
     moveName: Spike
     hitForceXY: {x: 3, y: -20}
-    cooldown: 3
-    approachSpeed: 15
+    cooldown: 6
+    approachSpeed: 20
     giveUpTime: 4
   move2:
     moveName: PileDrive
-    hitForceXY: {x: 5, y: -20}
-    cooldown: 5
+    hitForceXY: {x: 8, y: -20}
+    cooldown: 9
     approachSpeed: 20
     giveUpTime: 4
   selectedMove:
@@ -174,4 +174,7 @@ MonoBehaviour:
     giveUpTime: 4
   damageNumberPrefab: {fileID: 6008614820928236676, guid: 63c76344c0e28914783e0560acac690a, type: 3}
   worldCanvas: {fileID: 0}
+  currentSpeedMultiplier: 1
+  isProwling: 0
+  prowlDistance: 5
   currentPowerMultiplier: 1

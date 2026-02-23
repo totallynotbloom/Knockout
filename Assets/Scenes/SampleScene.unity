@@ -460,7 +460,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 0.9626852, b: 0, a: 1}
+  m_Color: {r: 1, g: 0.61737454, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1954,7 +1954,7 @@ MonoBehaviour:
   move2Names:
   - {fileID: 2041588276}
   - {fileID: 1073052551}
-  parryWindow: 0.5
+  parryWindow: 1.5
   counterUIText: {fileID: 1526175815}
   parryChance: 21
   cinematicZoomSize: 10
@@ -1963,7 +1963,7 @@ MonoBehaviour:
   parrySuccessUI: {fileID: 533146367}
   parryFailUI: {fileID: 2052774988}
   parryDamage: 20
-  parryLaunchForce: {x: 30, y: 30}
+  parryLaunchForce: {x: 15, y: 15}
 --- !u!114 &489878196
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3850,9 +3850,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossHealth
   bossName: BIG BLUE
-  maxHealth: 20
-  currentHealth: 10
-  maxArmor: 10
+  maxHealth: 100
+  currentHealth: 0
+  maxArmor: 20
   currentArmor: 0
   isArmorBroken: 0
   armorRegenTime: 15

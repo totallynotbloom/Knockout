@@ -107,13 +107,13 @@ MonoBehaviour:
   move1:
     moveName: Bash
     hitForceXY: {x: 30, y: 3}
-    cooldown: 3
+    cooldown: 5
     approachSpeed: 15
     giveUpTime: 3
   move2:
     moveName: UpperCut
-    hitForceXY: {x: 20, y: 40}
-    cooldown: 2
+    hitForceXY: {x: 10, y: 20}
+    cooldown: 7
     approachSpeed: 20
     giveUpTime: 3
   selectedMove:
