@@ -156,14 +156,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MVPHero
   move1:
     moveName: Spike
-    hitForceXY: {x: 3, y: -20}
-    cooldown: 6
+    hitForceXY: {x: 5, y: -20}
+    cooldown: 3
     approachSpeed: 20
     giveUpTime: 4
   move2:
     moveName: PileDrive
-    hitForceXY: {x: 8, y: -20}
-    cooldown: 9
+    hitForceXY: {x: 20, y: -20}
+    cooldown: 6
     approachSpeed: 20
     giveUpTime: 4
   selectedMove:

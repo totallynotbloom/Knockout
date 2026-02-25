@@ -106,13 +106,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MVPHero
   move1:
     moveName: Bash
-    hitForceXY: {x: 30, y: 3}
+    hitForceXY: {x: 30, y: 5}
     cooldown: 5
     approachSpeed: 15
     giveUpTime: 3
   move2:
     moveName: UpperCut
-    hitForceXY: {x: 10, y: 20}
+    hitForceXY: {x: 15, y: 20}
     cooldown: 7
     approachSpeed: 20
     giveUpTime: 3

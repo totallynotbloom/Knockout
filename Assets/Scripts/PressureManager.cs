@@ -5,6 +5,11 @@ using System.Collections;
 
 public class PressureManager : MonoBehaviour
 {
+	[Header("Start Condition")]
+	public Transform playerTransform; // Drag the player/boss here
+	public float startThresholdX = 5f; // Distance to move before pressure starts
+	private bool hasStarted = false;
+
 	[Header("Thresholds")]
 	public Rigidbody bossRb;
 	public float velocityThreshold = 2.0f;
@@ -40,8 +45,18 @@ public class PressureManager : MonoBehaviour
 
 	void Update()
 	{
-		// Don't count pressure if game is over or boss is currently dying
+		// 1. Logic Guard: Don't count pressure if game is over or boss is dying
 		if (isGameOver || bossRb == null || (bossScript != null && bossScript.isDead)) return;
+
+		// 2. Start Check: Only begin logic once the player moves past the threshold
+		if (!hasStarted)
+		{
+			if (playerTransform != null && playerTransform.position.x > startThresholdX)
+			{
+				hasStarted = true;
+			}
+			return; // Exit Update early if hasn't started yet
+		}
 
 		bool isStationary = Mathf.Abs(bossRb.linearVelocity.x) < velocityThreshold &&
 							Mathf.Abs(bossRb.linearVelocity.y) < velocityThreshold;
@@ -87,10 +102,10 @@ public class PressureManager : MonoBehaviour
 		if (summoner != null) summoner.enabled = false;
 	}
 
-	// THIS FUNCTION MUST BE HERE
 	public void ResetManager()
 	{
 		isGameOver = false;
+		hasStarted = false; // Reset the start trigger
 		currentRestTimer = 0f;
 		if (loseUI != null) loseUI.SetActive(false);
 		if (pressureSlider != null) pressureSlider.value = 0;
