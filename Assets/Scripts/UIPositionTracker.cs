@@ -5,9 +5,12 @@ public class UIPositionTracker : MonoBehaviour
 {
 	public Transform target;
 	public TextMeshProUGUI positionText;
+	public PressureManager pressureManager;
 
 	private Vector3 startPosition;
 	private Rigidbody targetRb;
+	private float totalElapsedTime = 0f;
+	private bool timerActive = false;
 
 	void Start()
 	{
@@ -20,23 +23,33 @@ public class UIPositionTracker : MonoBehaviour
 
 	void Update()
 	{
-		if (target != null && positionText != null && targetRb != null)
+		if (target == null || positionText == null) return;
+
+		float distance = target.position.x - startPosition.x;
+		float height = target.position.y - startPosition.y + 1;
+		float horizontalVelocity = (targetRb != null) ? Mathf.Abs(targetRb.linearVelocity.x) : 0f;
+
+		// TIMER LOGIC
+		// Check if we should start the timer
+		if (!timerActive)
 		{
-			// Calculate relative distance
-			float distance = target.position.x - startPosition.x;
-			float height = target.position.y - startPosition.y + 1;
-
-			// 1. Get ONLY the horizontal velocity (X axis)
-			float horizontalVelocity = targetRb.linearVelocity.x;
-
-			// 2. Use Mathf.Abs if you want "Speed" (always positive) 
-			// OR leave it as is if you want to see negative numbers when moving left
-			float displayVelocity = Mathf.Abs(horizontalVelocity);
-
-			// Update the UI
-			positionText.text = $"Distance: {distance:F0}m\n" +
-							   $"Height: {height:F0}m\n" +
-							   $"Horiz Speed: {displayVelocity:F1} m/s";
+			float threshold = (pressureManager != null) ? pressureManager.startThresholdX : 2f;
+			if (distance > threshold) timerActive = true;
 		}
+
+		// Only count if active and game isn't over
+		bool gameOver = (pressureManager != null) && pressureManager.isGameOver;
+		if (timerActive && !gameOver)
+		{
+			totalElapsedTime += Time.deltaTime;
+		}
+
+		int minutes = Mathf.FloorToInt(totalElapsedTime / 60);
+		int seconds = Mathf.FloorToInt(totalElapsedTime % 60);
+
+		positionText.text = $"Distance: {distance:F0}m\n" +
+						   $"Height: {height:F0}m\n" +
+						   $"Horiz Speed: {horizontalVelocity:F1} m/s\n" +
+						   $"Time: {minutes:00}:{seconds:00}";
 	}
 }
