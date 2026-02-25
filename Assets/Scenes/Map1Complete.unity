@@ -1293,6 +1293,56 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6636625177207203575, guid: eee57a3a4c423fa45b22d14e9f51d83e, type: 3}
   m_PrefabInstance: {fileID: 790822913}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &283072750
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 283072752}
+  - component: {fileID: 283072751}
+  m_Layer: 0
+  m_Name: Map Generator
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &283072751
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 283072750}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01a258df165dfad4e8cb145f8e8cd065, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EndlessMap
+  firstMapChunk: {fileID: 1021124197}
+  mapChunks:
+  - {fileID: 9074451278977230484, guid: 8bd632bff4943f14f9391180cb9779bc, type: 3}
+  player: {fileID: 1126066385}
+  chunkWidth: 278
+  chunksAhead: 2
+--- !u!4 &283072752
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 283072750}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 25.14947, y: 1.57, z: 11.33159}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &294597545
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3030,6 +3080,53 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6636625177207203575, guid: eee57a3a4c423fa45b22d14e9f51d83e, type: 3}
   m_PrefabInstance: {fileID: 1693502909}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &543303651
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 543303652}
+  - component: {fileID: 543303653}
+  m_Layer: 0
+  m_Name: HudController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &543303652
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 543303651}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -40.90828, y: -16.38198, z: 17.07157}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1938811416}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &543303653
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 543303651}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74d988fbd3d42f745b14f5c2e8298245, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIPositionTracker
+  target: {fileID: 1126066385}
+  positionText: {fileID: 315728230}
+  pressureManager: {fileID: 1020066051}
 --- !u!4 &563960821 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4989481681060946092, guid: 120d7631bf5b4b94f8271411b1868e06, type: 3}
@@ -4819,6 +4916,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 38ccddca0ffafaa48a90bd3773c83cc6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PressureManager
+  playerTransform: {fileID: 0}
+  startThresholdX: 5
   bossRb: {fileID: 1126066381}
   velocityThreshold: 2
   maxRestTime: 5
@@ -8904,6 +9003,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 543303652}
   - {fileID: 489878197}
   - {fileID: 2093472904}
   - {fileID: 1020066050}
@@ -9423,6 +9523,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UIPositionTracker
   target: {fileID: 1126066385}
   positionText: {fileID: 315728230}
+  pressureManager: {fileID: 0}
 --- !u!114 &1978901443
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10912,3 +11013,4 @@ SceneRoots:
   - {fileID: 178362348}
   - {fileID: 1978901446}
   - {fileID: 1021124198}
+  - {fileID: 283072752}
