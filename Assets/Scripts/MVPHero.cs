@@ -50,6 +50,11 @@ public class MVPHero : MonoBehaviour
 	public bool isProwling = false;    // True if the hero is waiting for the player to hit the Parry button
 	public float prowlDistance = 5f;   // How far away from the boss they wait
 
+	[Header("Audio Settings")]
+	public AudioClip[] characterHitSounds;
+	[Range(0f, 1f)] public float hitVolume = 0.7f; // Individual hero hit volume
+	private AudioSource localAudioSource;
+
 	[HideInInspector] public float currentPowerMultiplier = 1f; // Used for buffs or upgrades
 
 	private Rigidbody myRb;
@@ -74,6 +79,12 @@ public class MVPHero : MonoBehaviour
 		// Randomize the regroup position so multiple heroes look like a squad
 		randomXOffset = Random.Range(-25f, -15f);
 		randomYOffset = Random.Range(-2f, 2f);
+
+		localAudioSource = GetComponent<AudioSource>();
+		if (localAudioSource == null)
+		{
+			localAudioSource = gameObject.AddComponent<AudioSource>();
+		}
 	}
 
 	void Update()
@@ -190,6 +201,7 @@ public class MVPHero : MonoBehaviour
 				float armorBonus = boss.isArmorBroken ? 2f : 1f;
 				bossRb.AddForce(force * armorBonus * currentPowerMultiplier, ForceMode.Impulse);
 			}
+			PlayCharacterHitSound();
 		}
 		StayOnScreen();
 	}
@@ -226,5 +238,18 @@ public class MVPHero : MonoBehaviour
 			myRb.useGravity = false;
 		}
 		isFollowingCamera = true;
+	}
+	private void PlayCharacterHitSound()
+	{
+		if (characterHitSounds == null || characterHitSounds.Length == 0) return;
+
+		// Pick a random sound from this hero's specific list
+		int randomIndex = Random.Range(0, characterHitSounds.Length);
+
+		// Slight pitch variation so it's not repetitive
+		localAudioSource.pitch = Random.Range(0.9f, 1.1f);
+
+		// Play the sound
+		localAudioSource.PlayOneShot(characterHitSounds[randomIndex]);
 	}
 }

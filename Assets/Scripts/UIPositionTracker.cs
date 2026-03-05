@@ -26,7 +26,7 @@ public class UIPositionTracker : MonoBehaviour
 		if (target == null || positionText == null) return;
 
 		float distance = target.position.x - startPosition.x;
-		float height = target.position.y - startPosition.y + 1;
+		float height = target.position.y - startPosition.y + 2;
 		float horizontalVelocity = (targetRb != null) ? Mathf.Abs(targetRb.linearVelocity.x) : 0f;
 
 		// TIMER LOGIC
