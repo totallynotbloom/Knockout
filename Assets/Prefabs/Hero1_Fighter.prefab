@@ -127,6 +127,11 @@ MonoBehaviour:
   currentSpeedMultiplier: 1
   isProwling: 0
   prowlDistance: 5
+  characterHitSounds:
+  - {fileID: 8300000, guid: 4b4d338486d9f9f43b58286651b739d2, type: 3}
+  - {fileID: 8300000, guid: 7dca4b7a0aa114e4595d5a0eaf14ca78, type: 3}
+  - {fileID: 8300000, guid: d8051c201bf92b6459a05a19bd01ef2c, type: 3}
+  hitVolume: 0.03
   currentPowerMultiplier: 1
 --- !u!65 &7446563552529824829
 BoxCollider:

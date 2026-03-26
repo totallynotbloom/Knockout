@@ -55,11 +55,13 @@ public class TacticalManager : MonoBehaviour
 		Time.timeScale = slowTimeScale;
 		Time.fixedDeltaTime = normalDeltaTime * Time.timeScale;
 
-		// SET RELATIVE ZOOM: Current Zoom minus the offset
-		// This captures the camera exactly where it is and pushes it 5 units closer
-		targetZoom = virtualCamera.Lens.FieldOfView - slowMoZoomOffset;
+		// --- NEW: TRIGGER AUDIO ---
+		if (MusicManager.Instance != null)
+		{
+			MusicManager.Instance.PlaySlowMoInitiation();
+		}
 
-		// Safety check so we don't zoom into the boss's atoms
+		targetZoom = virtualCamera.Lens.FieldOfView - slowMoZoomOffset;
 		if (targetZoom < 2f) targetZoom = 2f;
 	}
 

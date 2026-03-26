@@ -1,10 +1,11 @@
-using UnityEngine;
-using UnityEngine.InputSystem;
+using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.UI;
+using System.Security.Cryptography;
 using TMPro;
 using Unity.Cinemachine;
-using System.Collections;
+using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 /// <summary>
 /// This script is the heart of the player's interaction. 
@@ -73,15 +74,12 @@ public class HeroSummoner : MonoBehaviour
 		var keyboard = Keyboard.current;
 		if (keyboard == null) return;
 
-		// Parry Keys: V or E (Players can choose their favorite)
 		bool parryKeyPressed = keyboard.vKey.wasPressedThisFrame || keyboard.eKey.wasPressedThisFrame;
 
-		// If a parry is active, check for the button press
 		if (isParryActive && parryKeyPressed)
 		{
 			HandleParrySuccess();
 		}
-		// Open/Close the Tactical Menu with Space
 		else if (!isParryActive && keyboard.spaceKey.wasPressedThisFrame)
 		{
 			if (!isCommandMode)
@@ -94,10 +92,28 @@ public class HeroSummoner : MonoBehaviour
 			}
 		}
 
-		// Always keep the cooldown UI updated
+		// --- NEW: HANDLE 'F' SELECTION ---
+		if (isCommandMode && keyboard.fKey.wasPressedThisFrame)
+		{
+			// Get whatever button is currently white/highlighted
+			GameObject selected = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject;
+
+			if (selected != null)
+			{
+				// Get the script from the button
+				TacticalMoveButton btnScript = selected.GetComponent<TacticalMoveButton>();
+
+				if (btnScript != null)
+				{
+					// MANUALLY TRIGGER THE BUTTON
+					btnScript.OnClick();
+				}
+			}
+		}
+
 		UpdateCooldownUI();
 
-		// Handle Number Key inputs (1-4) while in Command Mode
+		// ... your existing number key (1-4) logic ...
 		if (isCommandMode)
 		{
 			if (keyboard.digit1Key.wasPressedThisFrame) { if (AttemptSummon(0, 1)) ExitTactical(); }
@@ -277,7 +293,7 @@ public class HeroSummoner : MonoBehaviour
 	}
 
 	// --- SUMMONING: The Decision Phase ---
-	bool AttemptSummon(int heroIndex, int moveNumber)
+	public bool AttemptSummon(int heroIndex, int moveNumber)
 	{
 		if (heroIndex >= heroList.Count) return false;
 		HeroData hero = heroList[heroIndex];
@@ -372,7 +388,7 @@ public class HeroSummoner : MonoBehaviour
 	}
 
 	// Check if at least one hero is ready to fight
-	bool AnyHeroReady()
+	public bool AnyHeroReady()
 	{
 		foreach (var hero in heroList)
 			if (hero.move1.isReady || hero.move2.isReady) return true;
@@ -380,36 +396,88 @@ public class HeroSummoner : MonoBehaviour
 	}
 
 	// Entering/Exiting the Tactical menu
-	void EnterTactical()
+	public void EnterTactical()
 	{
 		isCommandMode = true;
 		if (tacticalManager != null) tacticalManager.EnterSlowMo();
+		if (MusicManager.Instance != null) MusicManager.Instance.PlaySlowMoInitiation();
+
 		ToggleMovePanels(true);
+
+		// 1. Reset all borders to off first
+		TacticalMoveButton[] allButtons = FindObjectsByType<TacticalMoveButton>(FindObjectsSortMode.None);
+		foreach (var btn in allButtons)
+		{
+			if (btn.selectionBorder != null) btn.selectionBorder.enabled = false;
+		}
+
+		// 2. Clear any old focus to ensure a clean state change
+		UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
+
+		// 3. Find the first button and its script
+		GameObject firstBtnObj = moveSelectionPanels[0].GetComponentInChildren<TacticalMoveButton>().gameObject;
+		TacticalMoveButton firstBtnScript = firstBtnObj.GetComponent<TacticalMoveButton>();
+
+		if (firstBtnScript != null)
+		{
+			// Tell Unity this is the active button for WASD
+			UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(firstBtnObj);
+
+			// --- THE FIX: MANUALLY TRIGGER THE BORDER ---
+			// This ensures the blue frame appears on the very first frame
+			firstBtnScript.OnSelect(null);
+		}
 	}
 
-	void ExitTactical()
+	public void ExitTactical()
 	{
 		isCommandMode = false;
 		if (tacticalManager != null) tacticalManager.ExitSlowMo();
 		ToggleMovePanels(false);
 	}
+	public bool CheckMoveReady(int hIndex, int mNumber)
+	{
+		if (hIndex < 0 || hIndex >= heroList.Count) return false;
+
+		// Check the actual HeroMove data
+		if (mNumber == 1) return heroList[hIndex].move1.isReady;
+		if (mNumber == 2) return heroList[hIndex].move2.isReady;
+
+		return false;
+	}
 
 	// Shows or hides the names of the moves (Move 1 / Move 2)
 	void ToggleMovePanels(bool show)
 	{
-		for (int i = 0; i < moveSelectionPanels.Length; i++)
+		for (int i = 0; i < heroList.Count; i++)
 		{
 			if (moveSelectionPanels[i] == null) continue;
-			if (i < heroList.Count)
+
+			moveSelectionPanels[i].SetActive(show);
+
+			if (show && heroList[i].prefab != null)
 			{
-				moveSelectionPanels[i].SetActive(show);
-				if (show && heroList[i].prefab.TryGetComponent(out MVPHero p))
+				if (heroList[i].prefab.TryGetComponent(out MVPHero prefabScript))
 				{
-					move1Names[i].text = (i == 0 ? "1: " : "3: ") + p.move1.moveName;
-					move2Names[i].text = (i == 0 ? "2: " : "4: ") + p.move2.moveName;
+					TacticalMoveButton[] buttons = moveSelectionPanels[i].GetComponentsInChildren<TacticalMoveButton>();
+
+					foreach (var btn in buttons)
+					{
+						int displayNumber = (i * 2) + btn.moveNumber;
+
+						if (btn.moveNumber == 1) btn.SetupButton(prefabScript.move1, displayNumber);
+						if (btn.moveNumber == 2) btn.SetupButton(prefabScript.move2, displayNumber);
+
+						// --- ADD THIS TO FIX THE DARKNESS ---
+						// Reach into your live heroList to see if the move is actually ready
+						bool moveReady = (btn.moveNumber == 1) ? heroList[i].move1.isReady : heroList[i].move2.isReady;
+
+						// Tell the button to turn dark if it's not ready
+						btn.SetCooldownState(moveReady);
+					}
 				}
 			}
-			else moveSelectionPanels[i].SetActive(false);
 		}
 	}
+
 }
