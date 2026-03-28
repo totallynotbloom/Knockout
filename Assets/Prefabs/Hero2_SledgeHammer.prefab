@@ -160,18 +160,21 @@ MonoBehaviour:
     cooldown: 6
     approachSpeed: 20
     giveUpTime: 4
+    isSpike: 1
   move2:
     moveName: PileDrive
-    hitForceXY: {x: 8, y: -20}
+    hitForceXY: {x: 10, y: 30}
     cooldown: 9
     approachSpeed: 20
     giveUpTime: 4
+    isSpike: 1
   selectedMove:
     moveName: 
     hitForceXY: {x: 0, y: 0}
     cooldown: 5
     approachSpeed: 15
     giveUpTime: 4
+    isSpike: 0
   damageNumberPrefab: {fileID: 6008614820928236676, guid: 63c76344c0e28914783e0560acac690a, type: 3}
   worldCanvas: {fileID: 0}
   currentSpeedMultiplier: 1

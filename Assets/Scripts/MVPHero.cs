@@ -4,64 +4,67 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 
 /// <summary>
-/// This script controls the individual behavior of a summoned hero.
-/// It handles moving toward the boss, dealing damage, and the "Regroup" behavior after attacking.
+/// Controls the individual behavior of a summoned hero.
+/// Now interacts with the Boss's Structure Meter instead of Armor.
 /// </summary>
 public class MVPHero : MonoBehaviour
 {
 	[System.Serializable]
 	public class MoveProfile
 	{
-		public string moveName;        // The name of the attack
+		public string moveName;
+		[TextArea(2, 5)] public string description; // The text for the info box
 		public Vector2 hitForceXY;     // X = Knockback, Y = Launch height
-		public float cooldown = 5f;    // How long before this hero can be used again
-		public float approachSpeed = 15f; // How fast the hero flies at the boss
-		public float giveUpTime = 4f;  // Fail-safe: Hero despawns if they don't hit the boss in this time
+		public float cooldown = 5f;
+		public float approachSpeed = 15f;
+		public float giveUpTime = 4f;
+		public bool isSpike;
 	}
 
 	[Header("Move Configurations")]
 	public MoveProfile move1;
 	public MoveProfile move2;
 
-	[HideInInspector] public MoveProfile selectedMove; // The specific move chosen by the player
+	[HideInInspector] public MoveProfile selectedMove;
 
 	private float currentApproachSpeed;
 	private float currentGiveUpTime;
 
-	private Transform target;          // The Boss's transform
-	private Rigidbody targetRb;        // The Boss's physics body
-	private bool hasHit = false;       // Prevents the hero from hitting the boss multiple times
-	private float lifeTimer = 0f;      // Tracks how long the hero has been alive
+	private Transform target;
+	private Rigidbody targetRb;
+	private bool hasHit = false;
+	private float lifeTimer = 0f;
 
 	[Header("Regroup Settings")]
-	private bool isFollowingCamera = false; // Does the hero glide behind the camera after hitting?
+	private bool isFollowingCamera = false;
 	private Transform camTransform;
-	private float randomXOffset;       // Random position behind the camera so heroes don't overlap
+	private float randomXOffset;
 	private float randomYOffset;
 
 	[Header("Damage Number Settings")]
-	public GameObject damageNumberPrefab; // The "10" or "20" text that pops up
+	public GameObject damageNumberPrefab;
 	public Transform worldCanvas;
 
 	[Header("Movement Settings")]
 	public float currentSpeedMultiplier = 1f;
 
 	[Header("Parry Duel Settings")]
-	public bool isProwling = false;    // True if the hero is waiting for the player to hit the Parry button
-	public float prowlDistance = 5f;   // How far away from the boss they wait
+	public bool isProwling = false;
+	public float prowlDistance = 5f;
 
 	[Header("Audio Settings")]
 	public AudioClip[] characterHitSounds;
-	[Range(0f, 1f)] public float hitVolume = 0.7f; // Individual hero hit volume
+	[Range(0f, 1f)] public float hitVolume = 0.1f;
 	private AudioSource localAudioSource;
 
-	[HideInInspector] public float currentPowerMultiplier = 1f; // Used for buffs or upgrades
+	[Header("SFX Settings")]
+	public AudioClip punchSound;
+	[Range(0, 1)] public float punchVolume = 0.4f;
+
+	[HideInInspector] public float currentPowerMultiplier = 1f;
 
 	private Rigidbody myRb;
 
-	/// <summary>
-	/// Setup the hero's target and stats based on the player's choice.
-	/// </summary>
 	public void Initialize(Transform slushTarget, int moveNumber)
 	{
 		target = slushTarget;
@@ -70,13 +73,11 @@ public class MVPHero : MonoBehaviour
 		myRb = GetComponent<Rigidbody>();
 		camTransform = Camera.main.transform;
 
-		// Assign the correct move based on player input
 		selectedMove = (moveNumber == 1) ? move1 : move2;
 
 		currentApproachSpeed = selectedMove.approachSpeed;
 		currentGiveUpTime = selectedMove.giveUpTime;
 
-		// Randomize the regroup position so multiple heroes look like a squad
 		randomXOffset = Random.Range(-25f, -15f);
 		randomYOffset = Random.Range(-2f, 2f);
 
@@ -91,19 +92,16 @@ public class MVPHero : MonoBehaviour
 	{
 		if (target == null || targetRb == null) return;
 
-		// --- ATTACK STATE ---
 		if (!hasHit)
 		{
 			lifeTimer += Time.deltaTime;
 
-			// Fail-safe: if the boss is moving too fast and we can't catch him, give up
 			if (lifeTimer >= currentGiveUpTime)
 			{
 				GiveUp();
 				return;
 			}
 
-			// 1. PARRY PROWL LOGIC: Stay at a fixed distance until the parry button is hit
 			if (isProwling)
 			{
 				Vector3 standoffPos = target.position + new Vector3(-prowlDistance, 0, 0);
@@ -111,7 +109,6 @@ public class MVPHero : MonoBehaviour
 				return;
 			}
 
-			// 2. HIGH SPEED PROXIMITY CHECK: If moving super fast, trigger hit earlier
 			float distanceToBoss = Vector3.Distance(transform.position, target.position);
 			if (currentSpeedMultiplier > 1f && distanceToBoss < 2.0f)
 			{
@@ -119,30 +116,23 @@ public class MVPHero : MonoBehaviour
 				return;
 			}
 
-			// 3. NORMAL MOVEMENT: Match the boss's speed + approach speed
 			float bossSpeedX = targetRb.linearVelocity.x;
 			float totalSpeed = (Mathf.Max(bossSpeedX, 0) + currentApproachSpeed) * currentSpeedMultiplier;
 
 			transform.position = Vector3.MoveTowards(transform.position, target.position, totalSpeed * Time.deltaTime);
 		}
-		// --- REGROUP STATE ---
 		else if (isFollowingCamera)
 		{
-			// Glide to a position behind the player's view
 			Vector3 regroupPos = new Vector3(camTransform.position.x + randomXOffset, target.position.y + randomYOffset, 0f);
 			transform.position = Vector3.Lerp(transform.position, regroupPos, Time.deltaTime * 3f);
 		}
 	}
 
-	/// <summary>
-	/// Called by HeroSummoner when the player successfully hits a Parry.
-	/// </summary>
 	public void TriggerParryExit()
 	{
 		isProwling = false;
 		hasHit = true;
 
-		// Create a massive time-freeze effect for the success
 		if (HitStopManager.Instance != null)
 			HitStopManager.Instance.TriggerVariableHitStop(2000f);
 
@@ -150,15 +140,12 @@ public class MVPHero : MonoBehaviour
 		{
 			myRb.isKinematic = false;
 			myRb.useGravity = false;
-			myRb.linearVelocity = new Vector3(-20f, 5f, 0f); // Fly backward stylishly
+			myRb.linearVelocity = new Vector3(-20f, 5f, 0f);
 		}
 
-		Destroy(gameObject, 1.5f); // Cleanup
+		Destroy(gameObject, 1.5f);
 	}
 
-	/// <summary>
-	/// If the hero misses or takes too long, they go back on cooldown and regroup.
-	/// </summary>
 	void GiveUp()
 	{
 		hasHit = true;
@@ -168,7 +155,8 @@ public class MVPHero : MonoBehaviour
 	}
 
 	/// <summary>
-	/// The core "Attack" logic. Calculates damage and applies force to the Boss.
+	/// The core "Attack" logic. 
+	/// UPDATED: Directly damages Boss Health and Structure.
 	/// </summary>
 	void HandleManualHit(GameObject bossObj)
 	{
@@ -177,36 +165,35 @@ public class MVPHero : MonoBehaviour
 
 		if (bossObj.TryGetComponent<BossHealth>(out BossHealth boss))
 		{
-			// Calculate damage based on the move's physical force
 			float damageCalculated = (selectedMove.hitForceXY.magnitude * 0.5f) * currentPowerMultiplier;
-
-			// Deal damage to boss and trigger a Hit-Stop based on the impact
 			float impactForce = selectedMove.hitForceXY.magnitude * currentPowerMultiplier;
-			boss.TakeDamage(damageCalculated, impactForce);
 
-			// SPAWN DAMAGE NUMBER:
+			// Pass the isSpike boolean from the selected move
+			boss.TakeDamage(damageCalculated, impactForce, false, selectedMove.isSpike);
+
+			// 3. UI FEEDBACK
 			if (damageNumberPrefab != null && worldCanvas != null)
 			{
 				Vector3 spawnPos = bossObj.transform.position + new Vector3(0, 2f, -1f);
 				GameObject dn = Instantiate(damageNumberPrefab, spawnPos, Quaternion.identity, worldCanvas);
-				if (dn.TryGetComponent<DamageNumber>(out DamageNumber dnScript)) dnScript.SetText(damageCalculated);
+				if (dn.TryGetComponent<DamageNumber>(out DamageNumber dnScript))
+					dnScript.SetText(damageCalculated);
 			}
 
-			// APPLY PHYSICS FORCE:
+			// 4. PHYSICS KNOCKBACK
+			// Boss knockback is now consistent since Armor is gone
 			Rigidbody bossRb = bossObj.GetComponent<Rigidbody>();
 			if (bossRb != null)
 			{
 				Vector3 force = new Vector3(selectedMove.hitForceXY.x, selectedMove.hitForceXY.y, 0);
-				// If armor is broken, the boss is twice as easy to knock around!
-				float armorBonus = boss.isArmorBroken ? 2f : 1f;
-				bossRb.AddForce(force * armorBonus * currentPowerMultiplier, ForceMode.Impulse);
+				bossRb.AddForce(force * currentPowerMultiplier, ForceMode.Impulse);
 			}
+
 			PlayCharacterHitSound();
 		}
 		StayOnScreen();
 	}
 
-	// Uses Trigger for standard collision detection
 	private void OnTriggerEnter(Collider other)
 	{
 		if (other.CompareTag("Player") && !hasHit)
@@ -215,9 +202,6 @@ public class MVPHero : MonoBehaviour
 		}
 	}
 
-	/// <summary>
-	/// After hitting, turn the hero into a physics object so they fall/tumble briefly.
-	/// </summary>
 	void StayOnScreen()
 	{
 		if (TryGetComponent<Collider>(out Collider col)) col.isTrigger = false;
@@ -227,7 +211,7 @@ public class MVPHero : MonoBehaviour
 			myRb.useGravity = true;
 			myRb.AddForce(new Vector3(-2, 3, 0), ForceMode.Impulse);
 		}
-		Invoke("StartFollowing", 1.5f); // Transition to the glide state after 1.5s
+		Invoke("StartFollowing", 1.5f);
 	}
 
 	void StartFollowing()
@@ -239,17 +223,26 @@ public class MVPHero : MonoBehaviour
 		}
 		isFollowingCamera = true;
 	}
+
 	private void PlayCharacterHitSound()
 	{
 		if (characterHitSounds == null || characterHitSounds.Length == 0) return;
 
-		// Pick a random sound from this hero's specific list
 		int randomIndex = Random.Range(0, characterHitSounds.Length);
 
-		// Slight pitch variation so it's not repetitive
+		// Randomize pitch to make repetitive hits sound more natural
 		localAudioSource.pitch = Random.Range(0.9f, 1.1f);
 
-		// Play the sound
-		localAudioSource.PlayOneShot(characterHitSounds[randomIndex]);
+		// FIX: Added 'hitVolume' as the second parameter to control loudness
+		localAudioSource.PlayOneShot(characterHitSounds[randomIndex], hitVolume);
+	}
+
+	public void TriggerHitSound(AudioSource source)
+	{
+		if (source != null && punchSound != null)
+		{
+			// FIX: Ensure the punchVolume is actually being applied here
+			source.PlayOneShot(punchSound, punchVolume);
+		}
 	}
 }

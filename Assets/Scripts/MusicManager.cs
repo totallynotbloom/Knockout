@@ -22,9 +22,11 @@ public class MusicManager : MonoBehaviour
 	public AudioClip navigationTickSFX; // The "Blip" or "Tick" sound
 	[Range(0f, 1f)] public float navVolume = 0.4f;
 	private AudioSource uiSource;
+	private float silenceTimer = 0.2f; // Don't play UI sounds for the first 0.2s
 
 	void Awake()
 	{
+		if (silenceTimer > 0) silenceTimer -= Time.unscaledDeltaTime;
 		Instance = this;
 
 		// Setup Music Source

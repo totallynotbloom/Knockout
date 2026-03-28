@@ -70,7 +70,7 @@ public class EndlessMap : MonoBehaviour
 	void RemoveOldChunk()
 	{
 		// Lowered threshold: Keeps exactly enough chunks to cover the camera view
-		if (activeChunks.Count > chunksAhead + 1)
+		if (activeChunks.Count > chunksAhead + 3)
 		{
 			GameObject oldChunk = activeChunks.Dequeue();
 			Destroy(oldChunk);

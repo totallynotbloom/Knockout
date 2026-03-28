@@ -57,6 +57,8 @@ public class HeroSummoner : MonoBehaviour
 	private Vector3 cameraTargetPos;       // Where the camera wants to go
 	private bool isCommandMode = false;    // Are we currently in the Slow-Mo menu?
 
+	public MoveInfoPanel moveInfoPanel;
+
 	void Start()
 	{
 		// Save the default camera zoom so we know what to return to
@@ -252,7 +254,7 @@ public class HeroSummoner : MonoBehaviour
 		}
 
 		isParryActive = false;
-		Invoke(nameof(StartCameraReturn), 1.0f); // Wait a second to enjoy the hit before zooming out
+		Invoke(nameof(StartCameraReturn), .2f); // Wait a second to enjoy the hit before zooming out
 	}
 
 	void StartCameraReturn()
@@ -400,32 +402,28 @@ public class HeroSummoner : MonoBehaviour
 	{
 		isCommandMode = true;
 		if (tacticalManager != null) tacticalManager.EnterSlowMo();
-		if (MusicManager.Instance != null) MusicManager.Instance.PlaySlowMoInitiation();
+
+		// 1. CLEAR THE INFO PANEL IMMEDIATELY
+		if (moveInfoPanel != null) moveInfoPanel.Hide();
 
 		ToggleMovePanels(true);
 
-		// 1. Reset all borders to off first
+		// 2. Reset all borders
 		TacticalMoveButton[] allButtons = FindObjectsByType<TacticalMoveButton>(FindObjectsSortMode.None);
 		foreach (var btn in allButtons)
 		{
 			if (btn.selectionBorder != null) btn.selectionBorder.enabled = false;
 		}
 
-		// 2. Clear any old focus to ensure a clean state change
+		// 3. Select the first button
 		UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
-
-		// 3. Find the first button and its script
 		GameObject firstBtnObj = moveSelectionPanels[0].GetComponentInChildren<TacticalMoveButton>().gameObject;
-		TacticalMoveButton firstBtnScript = firstBtnObj.GetComponent<TacticalMoveButton>();
 
-		if (firstBtnScript != null)
+		if (firstBtnObj != null)
 		{
-			// Tell Unity this is the active button for WASD
 			UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(firstBtnObj);
-
-			// --- THE FIX: MANUALLY TRIGGER THE BORDER ---
-			// This ensures the blue frame appears on the very first frame
-			firstBtnScript.OnSelect(null);
+			// This triggers the first button's OnSelect, which fills the InfoPanel
+			firstBtnObj.GetComponent<TacticalMoveButton>().OnSelect(null);
 		}
 	}
 
@@ -434,6 +432,9 @@ public class HeroSummoner : MonoBehaviour
 		isCommandMode = false;
 		if (tacticalManager != null) tacticalManager.ExitSlowMo();
 		ToggleMovePanels(false);
+
+		// 4. HIDE THE INFO PANEL ON EXIT
+		if (moveInfoPanel != null) moveInfoPanel.Hide();
 	}
 	public bool CheckMoveReady(int hIndex, int mNumber)
 	{
