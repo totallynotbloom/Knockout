@@ -156,6 +156,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MVPHero
   move1:
     moveName: Spike
+    description: A brutal hammer drop that slams the boss back down and punishes bad positioning.
     hitForceXY: {x: 3, y: -20}
     cooldown: 6
     approachSpeed: 20
@@ -163,13 +164,15 @@ MonoBehaviour:
     isSpike: 1
   move2:
     moveName: PileDrive
-    hitForceXY: {x: 10, y: 30}
+    description: A crushing diving smash that buries the boss with huge impact and commitment.
+    hitForceXY: {x: 10, y: -30}
     cooldown: 9
     approachSpeed: 20
     giveUpTime: 4
     isSpike: 1
   selectedMove:
     moveName: 
+    description: 
     hitForceXY: {x: 0, y: 0}
     cooldown: 5
     approachSpeed: 15
@@ -185,4 +188,6 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 7dca4b7a0aa114e4595d5a0eaf14ca78, type: 3}
   - {fileID: 8300000, guid: d8051c201bf92b6459a05a19bd01ef2c, type: 3}
   hitVolume: 0.001
+  punchSound: {fileID: 0}
+  punchVolume: 0.4
   currentPowerMultiplier: 1

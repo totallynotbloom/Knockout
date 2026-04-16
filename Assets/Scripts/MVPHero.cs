@@ -34,12 +34,26 @@ public class MVPHero : MonoBehaviour
 	private Rigidbody targetRb;
 	private bool hasHit = false;
 	private float lifeTimer = 0f;
+	private bool canReengage = false;
+	private HeroSummoner ownerSummoner;
+	private int ownerHeroIndex = -1;
 
 	[Header("Regroup Settings")]
 	private bool isFollowingCamera = false;
 	private Transform camTransform;
 	private float randomXOffset;
 	private float randomYOffset;
+
+	[Header("Post-Impact Retreat")]
+	public float postImpactDuration = 2.0f;
+	public float retreatFollowDistance = 3.5f;
+	public float retreatHeightOffset = 0.25f;
+	public float retreatMinSpeed = 3.0f;
+	public float retreatCatchupBonus = 4.0f;
+	public float retreatSpeedSmoothing = 5.0f;
+	private bool isPostImpactRetreat = false;
+	private float postImpactTimer = 0f;
+	private float currentRetreatSpeed = 0f;
 
 	[Header("Damage Number Settings")]
 	public GameObject damageNumberPrefab;
@@ -65,15 +79,24 @@ public class MVPHero : MonoBehaviour
 
 	private Rigidbody myRb;
 
-	public void Initialize(Transform slushTarget, int moveNumber)
+	public void Initialize(Transform slushTarget, int moveNumber, HeroSummoner summoner = null, int heroIndex = -1)
 	{
 		target = slushTarget;
 		if (target != null) targetRb = target.GetComponent<Rigidbody>();
+		ownerSummoner = summoner;
+		ownerHeroIndex = heroIndex;
 
 		myRb = GetComponent<Rigidbody>();
 		camTransform = Camera.main.transform;
 
 		selectedMove = (moveNumber == 1) ? move1 : move2;
+		canReengage = false;
+		hasHit = false;
+		isFollowingCamera = false;
+		isPostImpactRetreat = false;
+		lifeTimer = 0f;
+		postImpactTimer = 0f;
+		currentRetreatSpeed = 0f;
 
 		currentApproachSpeed = selectedMove.approachSpeed;
 		currentGiveUpTime = selectedMove.giveUpTime;
@@ -126,12 +149,18 @@ public class MVPHero : MonoBehaviour
 			Vector3 regroupPos = new Vector3(camTransform.position.x + randomXOffset, target.position.y + randomYOffset, 0f);
 			transform.position = Vector3.Lerp(transform.position, regroupPos, Time.deltaTime * 3f);
 		}
+		else if (isPostImpactRetreat)
+		{
+			UpdatePostImpactRetreat();
+		}
 	}
 
 	public void TriggerParryExit()
 	{
 		isProwling = false;
 		hasHit = true;
+		canReengage = false;
+		isPostImpactRetreat = false;
 
 		if (HitStopManager.Instance != null)
 			HitStopManager.Instance.TriggerVariableHitStop(2000f);
@@ -149,6 +178,7 @@ public class MVPHero : MonoBehaviour
 	void GiveUp()
 	{
 		hasHit = true;
+		canReengage = false;
 		HeroSummoner summoner = FindFirstObjectByType<HeroSummoner>();
 		if (summoner != null) summoner.ResetHeroCooldown(this.gameObject);
 		StayOnScreen();
@@ -162,6 +192,9 @@ public class MVPHero : MonoBehaviour
 	{
 		if (hasHit) return;
 		hasHit = true;
+		canReengage = true;
+		StartMoveCooldownOnImpact();
+		DisableCollisionsAfterImpact();
 
 		if (bossObj.TryGetComponent<BossHealth>(out BossHealth boss))
 		{
@@ -191,7 +224,7 @@ public class MVPHero : MonoBehaviour
 
 			PlayCharacterHitSound();
 		}
-		StayOnScreen();
+		BeginPostImpactRetreat();
 	}
 
 	private void OnTriggerEnter(Collider other)
@@ -204,14 +237,130 @@ public class MVPHero : MonoBehaviour
 
 	void StayOnScreen()
 	{
-		if (TryGetComponent<Collider>(out Collider col)) col.isTrigger = false;
+		isPostImpactRetreat = false;
+
 		if (myRb != null)
 		{
-			myRb.isKinematic = false;
-			myRb.useGravity = true;
-			myRb.AddForce(new Vector3(-2, 3, 0), ForceMode.Impulse);
+			myRb.linearVelocity = Vector3.zero;
+			myRb.angularVelocity = Vector3.zero;
+			myRb.isKinematic = true;
+			myRb.useGravity = false;
 		}
 		Invoke("StartFollowing", 1.5f);
+	}
+
+	public bool CanReengage()
+	{
+		return canReengage && hasHit;
+	}
+
+	public void ReigniteAttack()
+	{
+		if (!CanReengage()) return;
+
+		canReengage = false;
+		hasHit = false;
+		isFollowingCamera = false;
+		isPostImpactRetreat = false;
+		lifeTimer = 0f;
+		postImpactTimer = 0f;
+		CancelInvoke(nameof(StartFollowing));
+
+		if (myRb != null)
+		{
+			myRb.linearVelocity = Vector3.zero;
+			myRb.angularVelocity = Vector3.zero;
+			myRb.isKinematic = true;
+			myRb.useGravity = false;
+		}
+
+		EnableCollisionsForAttack();
+	}
+
+	private void BeginPostImpactRetreat()
+	{
+		isPostImpactRetreat = true;
+		isFollowingCamera = false;
+		postImpactTimer = postImpactDuration;
+		currentRetreatSpeed = retreatMinSpeed;
+		CancelInvoke(nameof(StartFollowing));
+
+		if (myRb != null)
+		{
+			myRb.linearVelocity = Vector3.zero;
+			myRb.angularVelocity = Vector3.zero;
+			myRb.isKinematic = true;
+			myRb.useGravity = false;
+		}
+	}
+
+	private void UpdatePostImpactRetreat()
+	{
+		if (target == null || targetRb == null)
+		{
+			StayOnScreen();
+			return;
+		}
+
+		postImpactTimer -= Time.deltaTime;
+
+		float bossSpeedX = Mathf.Max(targetRb.linearVelocity.x, 0f);
+		float desiredRetreatSpeed = retreatMinSpeed + (bossSpeedX * retreatCatchupBonus * 0.1f);
+		currentRetreatSpeed = Mathf.Lerp(currentRetreatSpeed, desiredRetreatSpeed, Time.deltaTime * retreatSpeedSmoothing);
+
+		Vector3 desiredPos = target.position + new Vector3(-retreatFollowDistance, retreatHeightOffset, 0f);
+		transform.position = Vector3.MoveTowards(transform.position, desiredPos, currentRetreatSpeed * Time.deltaTime);
+
+		if (postImpactTimer <= 0f)
+		{
+			StayOnScreen();
+		}
+	}
+
+	private void DisableCollisionsAfterImpact()
+	{
+		Collider[] colliders = GetComponentsInChildren<Collider>();
+		foreach (Collider col in colliders)
+		{
+			col.enabled = false;
+		}
+	}
+
+	private void EnableCollisionsForAttack()
+	{
+		Collider[] colliders = GetComponentsInChildren<Collider>();
+		foreach (Collider col in colliders)
+		{
+			col.enabled = true;
+		}
+	}
+
+	private void StartMoveCooldownOnImpact()
+	{
+		if (selectedMove == null)
+		{
+			Debug.LogWarning($"{name} could not start cooldown on impact because selectedMove is null.");
+			return;
+		}
+
+		if (ownerSummoner == null)
+		{
+			ownerSummoner = FindFirstObjectByType<HeroSummoner>();
+		}
+
+		if (ownerSummoner == null)
+		{
+			Debug.LogWarning($"{name} could not start cooldown on impact because no HeroSummoner was found.");
+			return;
+		}
+
+		if (ownerHeroIndex < 0)
+		{
+			Debug.LogWarning($"{name} could not start cooldown on impact because ownerHeroIndex is invalid.");
+			return;
+		}
+
+		ownerSummoner.StartCooldownFromImpact(ownerHeroIndex, selectedMove.cooldown);
 	}
 
 	void StartFollowing()

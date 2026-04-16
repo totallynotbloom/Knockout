@@ -6,6 +6,7 @@ public class HeroMove
 	// These are "Live" variables tracked by the Summoner
 	[HideInInspector] public float currentTimer;
 	[HideInInspector] public bool isReady = true;
+	[HideInInspector] public bool isPendingImpact = false;
 }
 
 [System.Serializable]

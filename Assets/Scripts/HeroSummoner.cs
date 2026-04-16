@@ -94,6 +94,11 @@ public class HeroSummoner : MonoBehaviour
 			}
 		}
 
+		if (moveInfoPanel != null)
+		{
+			moveInfoPanel.SetDetailsExpanded(isCommandMode && keyboard.tabKey.isPressed);
+		}
+
 		// --- NEW: HANDLE 'F' SELECTION ---
 		if (isCommandMode && keyboard.fKey.wasPressedThisFrame)
 		{
@@ -181,8 +186,10 @@ public class HeroSummoner : MonoBehaviour
 			{
 				hero.move1.currentTimer = 0;
 				hero.move1.isReady = true;
+				hero.move1.isPendingImpact = false;
 				hero.move2.currentTimer = 0;
 				hero.move2.isReady = true;
+				hero.move2.isPendingImpact = false;
 				break;
 			}
 		}
@@ -199,7 +206,8 @@ public class HeroSummoner : MonoBehaviour
 
 		// Clean up old instance and spawn the new one for the parry animation
 		if (hero.activeInstance != null) Destroy(hero.activeInstance);
-		hero.activeInstance = SpawnHero(hero.prefab, moveNumber);
+		int heroIndex = heroList.IndexOf(hero);
+		hero.activeInstance = SpawnHero(hero.prefab, moveNumber, heroIndex);
 
 		// Tell the hero script they are in "Parry Mode"
 		if (hero.activeInstance.TryGetComponent(out MVPHero heroScript))
@@ -299,7 +307,11 @@ public class HeroSummoner : MonoBehaviour
 	{
 		if (heroIndex >= heroList.Count) return false;
 		HeroData hero = heroList[heroIndex];
-		if (hero.prefab == null) return false;
+		if (hero.prefab == null)
+		{
+			Debug.LogWarning($"AttemptSummon failed: Hero {heroIndex} has no prefab assigned.");
+			return false;
+		}
 
 		HeroMove moveState = (moveNumber == 1) ? hero.move1 : hero.move2;
 
@@ -313,30 +325,101 @@ public class HeroSummoner : MonoBehaviour
 			}
 
 			// Normal attack
-			ExecuteSummon(hero, moveNumber, 1f);
+			ExecuteSummon(hero, heroIndex, moveNumber, 1f);
 			return true;
+		}
+
+		if (moveState.isPendingImpact)
+		{
+			Debug.LogWarning($"AttemptSummon blocked: Hero {heroIndex} Move {moveNumber} is still traveling and has not impacted yet.");
+		}
+		else
+		{
+			Debug.LogWarning($"AttemptSummon blocked: Hero {heroIndex} Move {moveNumber} is not ready yet. Remaining cooldown: {moveState.currentTimer:F2}s");
 		}
 		return false;
 	}
 
 	// --- SUMMONING: The Spawning Phase ---
-	void ExecuteSummon(HeroData hero, int moveNumber, float powerMultiplier)
+	void ExecuteSummon(HeroData hero, int heroIndex, int moveNumber, float powerMultiplier)
 	{
+		if (TryReuseActiveHero(hero, heroIndex, moveNumber, powerMultiplier))
+		{
+			return;
+		}
+
 		if (hero.activeInstance != null) Destroy(hero.activeInstance);
-		hero.activeInstance = SpawnHero(hero.prefab, moveNumber);
+		hero.activeInstance = SpawnHero(hero.prefab, moveNumber, heroIndex);
 
 		if (hero.activeInstance.TryGetComponent<MVPHero>(out MVPHero heroScript))
 		{
-			heroScript.currentPowerMultiplier = 1f;
+			heroScript.currentPowerMultiplier = powerMultiplier;
 			heroScript.currentSpeedMultiplier = 1f;
-
-			// Put the hero on cooldown based on the move they used
-			float cd = heroScript.selectedMove.cooldown;
-			hero.move1.currentTimer = cd;
-			hero.move1.isReady = false;
-			hero.move2.currentTimer = cd;
-			hero.move2.isReady = false;
+			MarkMovePendingImpact(hero);
 		}
+	}
+
+	bool TryReuseActiveHero(HeroData hero, int heroIndex, int moveNumber, float powerMultiplier)
+	{
+		if (hero.activeInstance == null) return false;
+
+		if (hero.activeInstance.TryGetComponent(out MVPHero heroScript))
+		{
+			if (heroScript.CanReengage())
+			{
+				heroScript.currentPowerMultiplier = powerMultiplier;
+				heroScript.currentSpeedMultiplier = 1f;
+				heroScript.ReigniteAttack();
+				MarkMovePendingImpact(hero);
+				return true;
+			}
+
+			Debug.LogWarning($"AttemptSummon blocked: Hero {heroIndex} Move {moveNumber} is ready, but the active instance cannot re-engage right now.");
+			return false;
+		}
+
+		Debug.LogWarning($"AttemptSummon blocked: Hero {heroIndex} Move {moveNumber} has an active instance without MVPHero.");
+		return false;
+	}
+
+	void ApplyMoveCooldowns(HeroData hero, MVPHero heroScript, float powerMultiplier)
+	{
+		heroScript.currentPowerMultiplier = powerMultiplier;
+		heroScript.currentSpeedMultiplier = 1f;
+
+		// Put the hero on cooldown based on the move they used
+		float cd = heroScript.selectedMove.cooldown;
+		hero.move1.currentTimer = cd;
+		hero.move1.isReady = false;
+		hero.move2.currentTimer = cd;
+		hero.move2.isReady = false;
+	}
+
+	void MarkMovePendingImpact(HeroData hero)
+	{
+		hero.move1.currentTimer = 0f;
+		hero.move1.isReady = false;
+		hero.move1.isPendingImpact = true;
+		hero.move2.currentTimer = 0f;
+		hero.move2.isReady = false;
+		hero.move2.isPendingImpact = true;
+	}
+
+	public void StartCooldownFromImpact(int heroIndex, float cooldownDuration)
+	{
+		if (heroIndex < 0 || heroIndex >= heroList.Count)
+		{
+			Debug.LogWarning($"StartCooldownFromImpact failed: invalid hero index {heroIndex}.");
+			return;
+		}
+
+		HeroData hero = heroList[heroIndex];
+		hero.move1.currentTimer = cooldownDuration;
+		hero.move1.isReady = false;
+		hero.move1.isPendingImpact = false;
+		hero.move2.currentTimer = cooldownDuration;
+		hero.move2.isReady = false;
+		hero.move2.isPendingImpact = false;
 	}
 
 	// --- UI: Cooldown Visuals ---
@@ -345,15 +428,27 @@ public class HeroSummoner : MonoBehaviour
 		for (int i = 0; i < heroList.Count; i++)
 		{
 			if (heroList[i] == null) continue;
-			HeroMove m1 = heroList[i].move1;
-			HeroMove m2 = heroList[i].move2;
+			HeroData hero = heroList[i];
+			HeroMove m1 = hero.move1;
+			HeroMove m2 = hero.move2;
 
 			// Cooldowns tick down based on game time (slower during Tactical mode)
-			if (!m1.isReady) m1.currentTimer -= Time.deltaTime;
-			if (!m2.isReady) m2.currentTimer -= Time.deltaTime;
+			if (!m1.isReady && !m1.isPendingImpact && m1.currentTimer > 0f) m1.currentTimer -= Time.deltaTime;
+			if (!m2.isReady && !m2.isPendingImpact && m2.currentTimer > 0f) m2.currentTimer -= Time.deltaTime;
 
-			if (m1.currentTimer <= 0) m1.isReady = true;
-			if (m2.currentTimer <= 0) m2.isReady = true;
+			bool move1JustReady = !m1.isReady && !m1.isPendingImpact && m1.currentTimer <= 0f;
+			bool move2JustReady = !m2.isReady && !m2.isPendingImpact && m2.currentTimer <= 0f;
+
+			if (move1JustReady)
+			{
+				m1.isReady = true;
+				m1.currentTimer = 0f;
+			}
+			if (move2JustReady)
+			{
+				m2.isReady = true;
+				m2.currentTimer = 0f;
+			}
 
 			// Update the dark "Fill" image and the text timer
 			if (i < cooldownOverlays.Length && cooldownOverlays[i] != null)
@@ -362,14 +457,17 @@ public class HeroSummoner : MonoBehaviour
 				cooldownOverlays[i].gameObject.SetActive(heroBusy);
 				if (timerTexts[i] != null)
 				{
-					timerTexts[i].text = heroBusy ? Mathf.Max(m1.currentTimer, m2.currentTimer).ToString("F0") : "";
+					float displayedTimer = Mathf.Max(m1.currentTimer, m2.currentTimer);
+					timerTexts[i].text = heroBusy
+						? ((m1.isPendingImpact || m2.isPendingImpact) ? "..." : displayedTimer.ToString("F0"))
+						: "";
 				}
 			}
 		}
 	}
 
 	// --- UTILITY: The actual instantiation of the prefab ---
-	GameObject SpawnHero(GameObject prefab, int moveNumber)
+	GameObject SpawnHero(GameObject prefab, int moveNumber, int heroIndex)
 	{
 		if (prefab == null || slushTarget == null) return null;
 
@@ -383,7 +481,7 @@ public class HeroSummoner : MonoBehaviour
 		// Pass the Boss and the Canvas references to the new hero
 		if (go.TryGetComponent<MVPHero>(out MVPHero heroScript))
 		{
-			heroScript.Initialize(slushTarget, moveNumber);
+			heroScript.Initialize(slushTarget, moveNumber, this, heroIndex);
 			heroScript.worldCanvas = worldCanvas;
 		}
 		return go;
@@ -404,7 +502,11 @@ public class HeroSummoner : MonoBehaviour
 		if (tacticalManager != null) tacticalManager.EnterSlowMo();
 
 		// 1. CLEAR THE INFO PANEL IMMEDIATELY
-		if (moveInfoPanel != null) moveInfoPanel.Hide();
+		if (moveInfoPanel != null)
+		{
+			moveInfoPanel.SetDetailsExpanded(false);
+			moveInfoPanel.Hide();
+		}
 
 		ToggleMovePanels(true);
 
@@ -434,7 +536,11 @@ public class HeroSummoner : MonoBehaviour
 		ToggleMovePanels(false);
 
 		// 4. HIDE THE INFO PANEL ON EXIT
-		if (moveInfoPanel != null) moveInfoPanel.Hide();
+		if (moveInfoPanel != null)
+		{
+			moveInfoPanel.SetDetailsExpanded(false);
+			moveInfoPanel.Hide();
+		}
 	}
 	public bool CheckMoveReady(int hIndex, int mNumber)
 	{

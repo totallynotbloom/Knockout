@@ -14,6 +14,7 @@ public class TacticalMoveButton : MonoBehaviour, ISelectHandler, IDeselectHandle
 
 	private MVPHero.MoveProfile myMoveProfile;
 	private Color mySlotColor;
+	private HeroSummoner heroSummoner;
 	public bool isMoveReady;
 
 	[Header("Selection Visuals")]
@@ -32,6 +33,7 @@ public class TacticalMoveButton : MonoBehaviour, ISelectHandler, IDeselectHandle
 		}
 
 		UpdateUIFeedback();
+		ShowMoveInfo();
 
 		if (selectionBorder != null)
 		{
@@ -44,6 +46,7 @@ public class TacticalMoveButton : MonoBehaviour, ISelectHandler, IDeselectHandle
 	public void OnDeselect(BaseEventData eventData)
 	{
 		ShowSelection(false); // Turn OFF border for WASD
+		HideMoveInfo();
 	}
 
 	public void OnPointerEnter(PointerEventData eventData)
@@ -55,6 +58,7 @@ public class TacticalMoveButton : MonoBehaviour, ISelectHandler, IDeselectHandle
 			MusicManager.Instance.PlayNavigationSound();
 
 		ShowSelection(true);
+		ShowMoveInfo();
 	}
 
 	public void OnPointerExit(PointerEventData eventData)
@@ -67,6 +71,7 @@ public class TacticalMoveButton : MonoBehaviour, ISelectHandler, IDeselectHandle
 		}
 
 		ShowSelection(false);
+		HideMoveInfo();
 	}
 
 	private void ShowSelection(bool isVisible)
@@ -121,6 +126,34 @@ public class TacticalMoveButton : MonoBehaviour, ISelectHandler, IDeselectHandle
 			// Match the Stats Bar background to the Hero's color
 			if (statsBackground != null)
 				statsBackground.color = mySlotColor;
+		}
+	}
+
+	private void ShowMoveInfo()
+	{
+		if (myMoveProfile == null) return;
+
+		if (heroSummoner == null)
+		{
+			heroSummoner = Object.FindFirstObjectByType<HeroSummoner>();
+		}
+
+		if (heroSummoner != null && heroSummoner.moveInfoPanel != null)
+		{
+			heroSummoner.moveInfoPanel.ShowMoveInfo(myMoveProfile, mySlotColor);
+		}
+	}
+
+	private void HideMoveInfo()
+	{
+		if (heroSummoner == null)
+		{
+			heroSummoner = Object.FindFirstObjectByType<HeroSummoner>();
+		}
+
+		if (heroSummoner != null && heroSummoner.moveInfoPanel != null)
+		{
+			heroSummoner.moveInfoPanel.Hide();
 		}
 	}
 

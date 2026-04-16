@@ -106,16 +106,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MVPHero
   move1:
     moveName: Bash
-    description: 
-    hitForceXY: {x: 30, y: 3}
-    cooldown: 5
+    description: A heavy straight punch that blasts the boss forward and keeps the
+      pressure on.
+    hitForceXY: {x: 25, y: 0}
+    cooldown: 3
     approachSpeed: 15
     giveUpTime: 3
     isSpike: 0
   move2:
     moveName: UpperCut
-    description: 
-    hitForceXY: {x: 10, y: 20}
+    description: A rising strike that pops the boss skyward for big air control and
+      followups.
+    hitForceXY: {x: 10, y: 25}
     cooldown: 7
     approachSpeed: 20
     giveUpTime: 3
@@ -128,6 +130,12 @@ MonoBehaviour:
     approachSpeed: 15
     giveUpTime: 4
     isSpike: 0
+  postImpactDuration: 5
+  retreatFollowDistance: 0.1
+  retreatHeightOffset: 0.1
+  retreatMinSpeed: 0.07
+  retreatCatchupBonus: 7.69
+  retreatSpeedSmoothing: 2.5
   damageNumberPrefab: {fileID: 6008614820928236676, guid: 63c76344c0e28914783e0560acac690a, type: 3}
   worldCanvas: {fileID: 0}
   currentSpeedMultiplier: 1
