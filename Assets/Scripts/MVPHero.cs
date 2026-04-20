@@ -19,6 +19,8 @@ public class MVPHero : MonoBehaviour
 		public float approachSpeed = 15f;
 		public float giveUpTime = 4f;
 		public bool isSpike;
+		[Tooltip("Extra structure damage added on top of attack damage (scaled by power multiplier). Non-negative.")]
+		public float structureDamage;
 	}
 
 	[Header("Move Configurations")]
@@ -51,6 +53,8 @@ public class MVPHero : MonoBehaviour
 	public float retreatMinSpeed = 3.0f;
 	public float retreatCatchupBonus = 4.0f;
 	public float retreatSpeedSmoothing = 5.0f;
+	[Tooltip("How far past the left screen edge the hero must move before retreat ends.")]
+	public float retreatOffscreenPadding = 0.05f;
 	private bool isPostImpactRetreat = false;
 	private float postImpactTimer = 0f;
 	private float currentRetreatSpeed = 0f;
@@ -89,7 +93,6 @@ public class MVPHero : MonoBehaviour
 		myRb = GetComponent<Rigidbody>();
 		camTransform = Camera.main.transform;
 
-		selectedMove = (moveNumber == 1) ? move1 : move2;
 		canReengage = false;
 		hasHit = false;
 		isFollowingCamera = false;
@@ -97,9 +100,7 @@ public class MVPHero : MonoBehaviour
 		lifeTimer = 0f;
 		postImpactTimer = 0f;
 		currentRetreatSpeed = 0f;
-
-		currentApproachSpeed = selectedMove.approachSpeed;
-		currentGiveUpTime = selectedMove.giveUpTime;
+		ConfigureMove(moveNumber);
 
 		randomXOffset = Random.Range(-25f, -15f);
 		randomYOffset = Random.Range(-2f, 2f);
@@ -109,6 +110,13 @@ public class MVPHero : MonoBehaviour
 		{
 			localAudioSource = gameObject.AddComponent<AudioSource>();
 		}
+	}
+
+	public void ConfigureMove(int moveNumber)
+	{
+		selectedMove = (moveNumber == 1) ? move1 : move2;
+		currentApproachSpeed = selectedMove.approachSpeed;
+		currentGiveUpTime = selectedMove.giveUpTime;
 	}
 
 	void Update()
@@ -196,18 +204,22 @@ public class MVPHero : MonoBehaviour
 		StartMoveCooldownOnImpact();
 		DisableCollisionsAfterImpact();
 
-		if (bossObj.TryGetComponent<BossHealth>(out BossHealth boss))
+		// Colliders are often on children; BossHealth / Rigidbody live on the root.
+		BossHealth boss = bossObj != null ? bossObj.GetComponentInParent<BossHealth>() : null;
+		if (boss != null)
 		{
-			float damageCalculated = (selectedMove.hitForceXY.magnitude * 0.5f) * currentPowerMultiplier;
+			float damageCalculated = Mathf.Round((selectedMove.hitForceXY.magnitude * 0.5f) * currentPowerMultiplier);
 			float impactForce = selectedMove.hitForceXY.magnitude * currentPowerMultiplier;
+			float bonusStructure = Mathf.Round(Mathf.Max(0f, selectedMove.structureDamage) * currentPowerMultiplier);
+			float structureLoss = damageCalculated + bonusStructure;
 
 			// Pass the isSpike boolean from the selected move
-			boss.TakeDamage(damageCalculated, impactForce, false, selectedMove.isSpike);
+			boss.TakeDamage(damageCalculated, impactForce, false, selectedMove.isSpike, false, structureLoss);
 
 			// 3. UI FEEDBACK
 			if (damageNumberPrefab != null && worldCanvas != null)
 			{
-				Vector3 spawnPos = bossObj.transform.position + new Vector3(0, 2f, -1f);
+				Vector3 spawnPos = boss.transform.position + new Vector3(0, 2f, -1f);
 				GameObject dn = Instantiate(damageNumberPrefab, spawnPos, Quaternion.identity, worldCanvas);
 				if (dn.TryGetComponent<DamageNumber>(out DamageNumber dnScript))
 					dnScript.SetText(damageCalculated);
@@ -215,15 +227,15 @@ public class MVPHero : MonoBehaviour
 
 			// 4. PHYSICS KNOCKBACK
 			// Boss knockback is now consistent since Armor is gone
-			Rigidbody bossRb = bossObj.GetComponent<Rigidbody>();
+			Rigidbody bossRb = boss.GetComponent<Rigidbody>();
 			if (bossRb != null)
 			{
 				Vector3 force = new Vector3(selectedMove.hitForceXY.x, selectedMove.hitForceXY.y, 0);
 				bossRb.AddForce(force * currentPowerMultiplier, ForceMode.Impulse);
 			}
-
 			PlayCharacterHitSound();
 		}
+
 		BeginPostImpactRetreat();
 	}
 
@@ -277,6 +289,11 @@ public class MVPHero : MonoBehaviour
 		EnableCollisionsForAttack();
 	}
 
+	public void PrepareReigniteForMove(int moveNumber)
+	{
+		ConfigureMove(moveNumber);
+	}
+
 	private void BeginPostImpactRetreat()
 	{
 		isPostImpactRetreat = true;
@@ -311,9 +328,40 @@ public class MVPHero : MonoBehaviour
 		Vector3 desiredPos = target.position + new Vector3(-retreatFollowDistance, retreatHeightOffset, 0f);
 		transform.position = Vector3.MoveTowards(transform.position, desiredPos, currentRetreatSpeed * Time.deltaTime);
 
+		if (HasExitedScreenLeft())
+		{
+			EndRetreatAfterExitLeft();
+			return;
+		}
+
 		if (postImpactTimer <= 0f)
 		{
 			StayOnScreen();
+		}
+	}
+
+	private bool HasExitedScreenLeft()
+	{
+		Camera cam = Camera.main;
+		if (cam == null) return false;
+
+		Vector3 viewportPos = cam.WorldToViewportPoint(transform.position);
+		return viewportPos.x < -retreatOffscreenPadding;
+	}
+
+	private void EndRetreatAfterExitLeft()
+	{
+		isPostImpactRetreat = false;
+		canReengage = false;
+		hasHit = true;
+		CancelInvoke(nameof(StartFollowing));
+
+		if (myRb != null)
+		{
+			myRb.linearVelocity = Vector3.zero;
+			myRb.angularVelocity = Vector3.zero;
+			myRb.isKinematic = true;
+			myRb.useGravity = false;
 		}
 	}
 
@@ -375,15 +423,23 @@ public class MVPHero : MonoBehaviour
 
 	private void PlayCharacterHitSound()
 	{
-		if (characterHitSounds == null || characterHitSounds.Length == 0) return;
+		float sfxScale = GameAudioSettings.GetSfxVolume();
 
-		int randomIndex = Random.Range(0, characterHitSounds.Length);
+		if (characterHitSounds != null && characterHitSounds.Length > 0)
+		{
+			int randomIndex = Random.Range(0, characterHitSounds.Length);
+			// Randomize pitch to make repetitive hits sound more natural
+			localAudioSource.pitch = Random.Range(0.9f, 1.1f);
+			localAudioSource.PlayOneShot(characterHitSounds[randomIndex], hitVolume * sfxScale);
+			return;
+		}
 
-		// Randomize pitch to make repetitive hits sound more natural
-		localAudioSource.pitch = Random.Range(0.9f, 1.1f);
-
-		// FIX: Added 'hitVolume' as the second parameter to control loudness
-		localAudioSource.PlayOneShot(characterHitSounds[randomIndex], hitVolume);
+		// Fallback so moves (including spikes) never go silent on impact.
+		if (punchSound != null)
+		{
+			localAudioSource.pitch = 1f;
+			localAudioSource.PlayOneShot(punchSound, punchVolume * sfxScale);
+		}
 	}
 
 	public void TriggerHitSound(AudioSource source)
@@ -391,7 +447,7 @@ public class MVPHero : MonoBehaviour
 		if (source != null && punchSound != null)
 		{
 			// FIX: Ensure the punchVolume is actually being applied here
-			source.PlayOneShot(punchSound, punchVolume);
+			source.PlayOneShot(punchSound, punchVolume * GameAudioSettings.GetSfxVolume());
 		}
 	}
 }

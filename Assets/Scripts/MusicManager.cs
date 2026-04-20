@@ -27,6 +27,7 @@ public class MusicManager : MonoBehaviour
 	void Awake()
 	{
 		if (silenceTimer > 0) silenceTimer -= Time.unscaledDeltaTime;
+		GameAudioSettings.EnsureDefaults();
 		Instance = this;
 
 		// Setup Music Source
@@ -46,8 +47,11 @@ public class MusicManager : MonoBehaviour
 	{
 			// 1. Sync Volumes
 			// This makes the slider in the MusicManager control the AudioSource volume
-			if (musicSource != null) musicSource.volume = musicVolume;
-			if (sfxSource != null) sfxSource.volume = slowMoSFXVolume;
+			float musicScale = GameAudioSettings.GetMusicVolume();
+			float sfxScale = GameAudioSettings.GetSfxVolume();
+
+			if (musicSource != null) musicSource.volume = musicVolume * musicScale;
+			if (sfxSource != null) sfxSource.volume = slowMoSFXVolume * sfxScale;
 
 			// 2. Sync and Smooth the Pitch
 			// The targetPitch is based on whether time is slow or normal
@@ -62,14 +66,14 @@ public class MusicManager : MonoBehaviour
 		if (slowMoStartSFX != null)
 		{
 			// PlayOneShot allows you to pass a volume scale directly
-			sfxSource.PlayOneShot(slowMoStartSFX, slowMoSFXVolume);
+			sfxSource.PlayOneShot(slowMoStartSFX, slowMoSFXVolume * GameAudioSettings.GetSfxVolume());
 		}
 	}
 	public void PlayNavigationSound()
 	{
 		if (navigationTickSFX != null)
 		{
-			uiSource.PlayOneShot(navigationTickSFX, navVolume);
+			uiSource.PlayOneShot(navigationTickSFX, navVolume * GameAudioSettings.GetSfxVolume());
 		}
 	}
 }

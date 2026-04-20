@@ -108,11 +108,12 @@ MonoBehaviour:
     moveName: Bash
     description: A heavy straight punch that blasts the boss forward and keeps the
       pressure on.
-    hitForceXY: {x: 25, y: 0}
-    cooldown: 3
+    hitForceXY: {x: 30, y: 0}
+    cooldown: 4
     approachSpeed: 15
     giveUpTime: 3
     isSpike: 0
+    structureDamage: 3
   move2:
     moveName: UpperCut
     description: A rising strike that pops the boss skyward for big air control and
@@ -122,6 +123,7 @@ MonoBehaviour:
     approachSpeed: 20
     giveUpTime: 3
     isSpike: 0
+    structureDamage: 12
   selectedMove:
     moveName: 
     description: 
@@ -130,12 +132,14 @@ MonoBehaviour:
     approachSpeed: 15
     giveUpTime: 4
     isSpike: 0
+    structureDamage: 0
   postImpactDuration: 5
   retreatFollowDistance: 0.1
   retreatHeightOffset: 0.1
   retreatMinSpeed: 0.07
   retreatCatchupBonus: 7.69
   retreatSpeedSmoothing: 2.5
+  retreatOffscreenPadding: 0.05
   damageNumberPrefab: {fileID: 6008614820928236676, guid: 63c76344c0e28914783e0560acac690a, type: 3}
   worldCanvas: {fileID: 0}
   currentSpeedMultiplier: 1

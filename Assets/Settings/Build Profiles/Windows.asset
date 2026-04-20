@@ -21,6 +21,8 @@ MonoBehaviour:
   m_OverrideGlobalSceneList: 1
   m_Scenes:
   - m_enabled: 1
+    m_path: Assets/Scenes/MenuScene.unity
+  - m_enabled: 1
     m_path: Assets/Scenes/Map1Moutains.unity
   - m_enabled: 1
     m_path: Assets/Scenes/Map2Desert.unity

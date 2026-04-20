@@ -29,8 +29,18 @@ public class MoveInfoPanel : MonoBehaviour
 	public float expandedStatsHeight = 180f;
 
 	[Header("Optional Direction Visual")]
+	[Tooltip("Child of the move info panel (often next to stats). Rotates with hitForceXY.")]
 	public RectTransform launchArrow;
 	public Image launchArrowImage;
+	[Tooltip("Degrees added to the knockback angle. Use -90 if your sprite points Up in the file (Unity UI default art often points Up).")]
+	public float launchArrowRotationOffset = 0f;
+	[Tooltip("If true, the arrow only shows while expanded (e.g. holding Tab).")]
+	public bool showArrowOnlyWhenExpanded = false;
+	public bool tintArrowWithAccentColor = true;
+	[Tooltip("If enabled, sets launchArrow.anchoredPosition when switching compact/expanded layouts.")]
+	public bool usePresetArrowAnchors = false;
+	public Vector2 launchArrowAnchoredCompact;
+	public Vector2 launchArrowAnchoredExpanded;
 
 	private MVPHero.MoveProfile currentMoveProfile;
 	private bool showTechnicalDetails;
@@ -85,6 +95,8 @@ public class MoveInfoPanel : MonoBehaviour
 		EnsureLayoutReferences();
 		GetPanelTarget().SetActive(false);
 
+		if (launchArrow != null)
+			launchArrow.gameObject.SetActive(false);
 		if (launchArrowImage != null)
 			launchArrowImage.enabled = false;
 
@@ -140,7 +152,7 @@ public class MoveInfoPanel : MonoBehaviour
 
 	private string BuildCompactQuickStats(MVPHero.MoveProfile moveProfile)
 	{
-		return $"Hp {moveProfile.hitForceXY.x:F0}  Vp {moveProfile.hitForceXY.y:F0}<pos=72%>CD {moveProfile.cooldown:F1}s";
+		return $"Attack Damage {CalculateAttackDamage(moveProfile):F0}<pos=72%>CD {moveProfile.cooldown:F1}s";
 	}
 
 	private string BuildStatsText(MVPHero.MoveProfile moveProfile)
@@ -152,8 +164,8 @@ public class MoveInfoPanel : MonoBehaviour
 
 		return BuildStatLine("Horizontal Power:", $"{moveProfile.hitForceXY.x:F0}") + "\n" +
 			   BuildStatLine("Vertical Power:", $"{moveProfile.hitForceXY.y:F0}") + "\n" +
-			   BuildStatLine("Attack Damage:", $"{attackDamage:F1}") + "\n" +
-			   BuildStatLine("Structure Damage:", $"{structureDamage:F1}") + "\n" +
+			   BuildStatLine("Attack Damage:", $"{attackDamage:F0}") + "\n" +
+			   BuildStatLine("Structure Damage:", $"{structureDamage:F0}") + "\n" +
 			   BuildStatLine("Cooldown:", $"{moveProfile.cooldown:F1}s") + "\n" +
 			   BuildStatLine("Approach Speed:", $"{moveProfile.approachSpeed:F1}") + "\n" +
 			   BuildStatLine("Give Up Time:", $"{moveProfile.giveUpTime:F1}s") + "\n" +
@@ -163,12 +175,15 @@ public class MoveInfoPanel : MonoBehaviour
 
 	private float CalculateAttackDamage(MVPHero.MoveProfile moveProfile)
 	{
-		return moveProfile.hitForceXY.magnitude * 0.5f;
+		return Mathf.Round(moveProfile.hitForceXY.magnitude * 0.5f);
 	}
 
+	/// <summary>Attack damage (from force) plus base structure bonus — matches runtime at 1x power.</summary>
 	private float CalculateStructureDamage(MVPHero.MoveProfile moveProfile)
 	{
-		return moveProfile.hitForceXY.magnitude * 0.5f;
+		float attack = CalculateAttackDamage(moveProfile);
+		float baseStructure = Mathf.Max(0f, moveProfile.structureDamage);
+		return Mathf.Round(attack + baseStructure);
 	}
 
 	private string BuildStatLine(string label, string value)
@@ -294,6 +309,9 @@ public class MoveInfoPanel : MonoBehaviour
 			statsSize.y = expanded ? expandedStatsHeight : compactStatsHeightCached;
 			statsTextRect.sizeDelta = statsSize;
 		}
+
+		if (launchArrow != null && usePresetArrowAnchors)
+			launchArrow.anchoredPosition = expanded ? launchArrowAnchoredExpanded : launchArrowAnchoredCompact;
 	}
 
 	private GameObject GetPanelTarget()
@@ -307,11 +325,21 @@ public class MoveInfoPanel : MonoBehaviour
 
 		Vector2 force = moveProfile.hitForceXY;
 		bool hasDirection = force.sqrMagnitude > 0.001f;
-		launchArrowImage.enabled = hasDirection;
+		bool show = hasDirection && (!showArrowOnlyWhenExpanded || showTechnicalDetails);
 
-		if (!hasDirection) return;
+		launchArrow.gameObject.SetActive(show);
+		launchArrowImage.enabled = show;
 
-		float angle = Mathf.Atan2(force.y, force.x) * Mathf.Rad2Deg;
+		if (!show) return;
+
+		float angle = Mathf.Atan2(force.y, force.x) * Mathf.Rad2Deg + launchArrowRotationOffset;
 		launchArrow.localRotation = Quaternion.Euler(0f, 0f, angle);
+
+		if (tintArrowWithAccentColor)
+		{
+			Color c = currentAccentColor;
+			c.a = launchArrowImage.color.a;
+			launchArrowImage.color = c;
+		}
 	}
 }

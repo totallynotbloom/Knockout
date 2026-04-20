@@ -367,6 +367,7 @@ public class HeroSummoner : MonoBehaviour
 		{
 			if (heroScript.CanReengage())
 			{
+				heroScript.PrepareReigniteForMove(moveNumber);
 				heroScript.currentPowerMultiplier = powerMultiplier;
 				heroScript.currentSpeedMultiplier = 1f;
 				heroScript.ReigniteAttack();

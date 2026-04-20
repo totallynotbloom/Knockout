@@ -156,20 +156,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MVPHero
   move1:
     moveName: Spike
-    description: A brutal hammer drop that slams the boss back down and punishes bad positioning.
+    description: A brutal hammer drop that slams the boss back down and punishes
+      bad positioning.
     hitForceXY: {x: 3, y: -20}
     cooldown: 6
     approachSpeed: 20
     giveUpTime: 4
     isSpike: 1
+    structureDamage: 3
   move2:
     moveName: PileDrive
-    description: A crushing diving smash that buries the boss with huge impact and commitment.
+    description: A crushing diving smash that buries the boss with huge impact and
+      commitment.
     hitForceXY: {x: 10, y: -30}
     cooldown: 9
     approachSpeed: 20
     giveUpTime: 4
     isSpike: 1
+    structureDamage: 6
   selectedMove:
     moveName: 
     description: 
@@ -178,6 +182,14 @@ MonoBehaviour:
     approachSpeed: 15
     giveUpTime: 4
     isSpike: 0
+    structureDamage: 0
+  postImpactDuration: 2
+  retreatFollowDistance: 3.5
+  retreatHeightOffset: 0.25
+  retreatMinSpeed: 3
+  retreatCatchupBonus: 4
+  retreatSpeedSmoothing: 5
+  retreatOffscreenPadding: 0.05
   damageNumberPrefab: {fileID: 6008614820928236676, guid: 63c76344c0e28914783e0560acac690a, type: 3}
   worldCanvas: {fileID: 0}
   currentSpeedMultiplier: 1
@@ -187,7 +199,7 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 4b4d338486d9f9f43b58286651b739d2, type: 3}
   - {fileID: 8300000, guid: 7dca4b7a0aa114e4595d5a0eaf14ca78, type: 3}
   - {fileID: 8300000, guid: d8051c201bf92b6459a05a19bd01ef2c, type: 3}
-  hitVolume: 0.001
+  hitVolume: 0.307
   punchSound: {fileID: 0}
   punchVolume: 0.4
   currentPowerMultiplier: 1

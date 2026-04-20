@@ -97,6 +97,8 @@ public class BossHealth : MonoBehaviour
 						finalHealthDamage += Mathf.Abs(verticalSpeed) * 0.5f;
 					}
 
+					finalHealthDamage = Mathf.Round(finalHealthDamage);
+
 					// Apply the damage using the 'isSlam' flag
 					TakeDamage(finalHealthDamage, 0f, false, false, true);
 					SpawnSlamDamageNumber(finalHealthDamage);
@@ -104,7 +106,7 @@ public class BossHealth : MonoBehaviour
 					if (slamAudioSource != null && slamSound != null)
 					{
 						// The second parameter is the volume scale (0.0 to 1.0)
-						slamAudioSource.PlayOneShot(slamSound, slamVolume);
+						slamAudioSource.PlayOneShot(slamSound, slamVolume * GameAudioSettings.GetSfxVolume());
 					}
 
 					slamWindowTimer = 0;
@@ -114,9 +116,11 @@ public class BossHealth : MonoBehaviour
 		}
 	}
 
-	public void TakeDamage(float amount, float impactForce = 0f, bool isParry = false, bool isSpike = false, bool isSlam = false)
+	public void TakeDamage(float amount, float impactForce = 0f, bool isParry = false, bool isSpike = false, bool isSlam = false, float structureDamageDealt = -1f)
 	{
 		if (isDead) return;
+
+		amount = Mathf.Round(amount);
 
 		if (isSpike) slamWindowTimer = slamWindowDuration;
 
@@ -133,7 +137,8 @@ public class BossHealth : MonoBehaviour
 			}
 			else
 			{
-				structureManager.ReduceStructure(amount);
+				float structureLoss = structureDamageDealt < 0f ? amount : Mathf.Max(0f, Mathf.Round(structureDamageDealt));
+				structureManager.ReduceStructure(structureLoss);
 			}
 		}
 
